@@ -43,19 +43,14 @@ contract QuantumContract
 
 	}
 
-	function qc_X(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal view 
+	function qc_X(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
-		//console.log("mask %d currState %d Q0 ",mask,currState);
-		//console.log("Q0 %d Q1 %d ",uint(Qubits[0][Qidx]),uint(Qubits[1][Qidx]));
-		//console.log("Q2 %d Q3 %d ",uint(Qubits[2][Qidx]),uint(Qubits[3][Qidx]));
 
 		if ((mask & currState) != 0)
 			Qubits[currState-mask][nQidx] += Qubits[currState][Qidx];
 		else
 			Qubits[currState+mask][nQidx] += Qubits[currState][Qidx];
-		//console.log("new Q0 %d Q1 %d ",uint(Qubits[0][nQidx]),uint(Qubits[1][nQidx]));
-		//console.log("new Q2 %d Q3 %d ",uint(Qubits[2][nQidx]),uint(Qubits[3][nQidx]));
 	}
 
 	function qc_I(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
@@ -64,7 +59,7 @@ contract QuantumContract
 		Qubits[currState][nQidx] = Qubits[currState][Qidx];
 	}
 
-	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal view 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 		if (((cMask & currState) == cMask) && (cMask != 0))
@@ -121,7 +116,7 @@ contract QuantumContract
 				tempVal <<= numQubits-1;
 				uint256 cMask = 0;
 
-				for (j=0;i<numQubits;j++)
+				for (j=0;j<numQubits;j++)
 				{
 					if (qAlgo[j] == GATE_C)
 						cMask += tempVal;

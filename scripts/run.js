@@ -7,7 +7,7 @@ const main = async () =>
 	console.log("Contract deployed to:", qContract.address);
 	console.log("Contract deployed by:",owner.address);
 
-	const res1 = await qContract.runQScript(2,"XI.");
+	const res1 = await qContract.runQScript(2,"HI,CN.");
 	console.log("runQScript returned ",res1, " binary ",BigInt(res1).toString(2));
 
 
