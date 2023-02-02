@@ -16,6 +16,9 @@ contract QuantumContract
 	bytes1 constant GATE_m      = 'm';
 	bytes1 constant DELIM_NEXT  = ',';
 	bytes1 constant DELIM_END   = '.';
+	
+	int256[MAX_IDX] stateQubits; 
+	uint8 numStateQubits;
 
 	constructor() 
 	{
@@ -102,6 +105,7 @@ contract QuantumContract
 		uint256 j;
 		uint256 maxj=2**numQubits;
 		uint8 Qidx = 0;
+		uint8 nQidx;
 
 		mask = 1;
 		mask <<= numQubits - 1;
@@ -134,14 +138,22 @@ contract QuantumContract
 			else if (qAlgo[i] == GATE_m)
 			{
 				uint256 k = 0;
+				nQidx = (Qidx == 0)?1:0;
 				for (j = 0; j < maxj; j++)
-					k += uint(Qubits[j][Qidx]);
+				{
+					Qubits[j][nQidx] =Qubits[j][Qidx];
+					if (Qubits[j][nQidx] < 0)
+						Qubits[j][nQidx] = 0 - Qubits[j][nQidx];
+					k += uint(Qubits[j][nQidx]);
+				}
 				j = getRandom(k)+1;
 				k = 0;
-				while (j > uint(Qubits[k][Qidx]))
+				while (j > uint(Qubits[k][nQidx]))
 				{
-					j -= uint(Qubits[k++][Qidx]);
+					j -= uint(Qubits[k++][nQidx]);
 				}	
+				for (j = 0; j < maxj; j++)
+					Qubits[j][nQidx] = 0;
 				if ((k & mask) == 0)
 				{
 					for(j=0;j<maxj;j++)
@@ -192,7 +204,6 @@ contract QuantumContract
 		if (Qidx == 1)
 			for (j=0;j<maxj;j++)
 				Qubits[j][0] = Qubits[j][1];
-
 				
 		return numQubits;
 	}
@@ -239,12 +250,20 @@ contract QuantumContract
 					nextGate[j] = bytes(s)[i++];
 				}	
 				numQubits = qc_exec(numQubits,nextGate,Qubits);
-				if (bytes(s)[i] == DELIM_END)
+				if (i < slen)
 				{
-					done = true;
+					if (bytes(s)[i] == DELIM_END)
+					{
+						done = true;
+					}
+					else
+						i++;
 				}
 				else
-					i++;
+				{
+					revert("unexpected end-of-algo without .");
+				}
+				
 
 			}
 		}
@@ -252,7 +271,11 @@ contract QuantumContract
 		// measure			
 		i = 0;
 		for (j = 0; j < (2**numQubits); j++)
+		{
+			if (Qubits[j][0] < 0)
+				Qubits[j][0] = 0 - Qubits[j][0];
 			i += uint(Qubits[j][0]);
+		}
 		j = getRandom(i)+1;
 		ret = 0;
 		while (j > uint(Qubits[ret][0]))
@@ -264,5 +287,103 @@ contract QuantumContract
 			
 	}
 
+	function beginQScript(uint8 numQubits) public
+	{
+		uint256 i;
+		uint256 maxi=2**numQubits;
 
+		if (numQubits > MAX_QUBITS)
+			revert("MAX_QUBITS exceeded");	
+		numStateQubits = numQubits;
+		stateQubits[0] = 1;
+		for (i=1;i<maxi;i++)
+			stateQubits[i] = 0;
+		
+	}
+
+	function contQScript(string memory s) public 
+	{
+		uint8 numQubits = numStateQubits;
+		int256[2][MAX_IDX] memory Qubits; 
+		bytes1[] memory nextGate;
+		bool done = false;
+		bool cont = false;
+		uint256 i = 0;
+		uint256 j;
+		uint256 slen = bytes(s).length; 
+
+		for (i=0;i<(2**numQubits);i++)
+		{
+			Qubits[i][0] = stateQubits[i];
+		}
+	
+		nextGate = new bytes1[](numQubits);
+		console.log("%s called contQScript with string length %d",msg.sender,bytes(s).length);
+		i = 0;
+
+		while ((!done) && (!cont))
+		{
+			if (i + numQubits > slen)
+			{
+				if (bytes(s)[i] == DELIM_END)
+				{
+					done = true;
+				}
+				else
+				{
+					cont = true;
+				}
+			}
+			else
+			{
+				for (j = 0;j < numQubits;j++)
+				{
+					nextGate[j] = bytes(s)[i++];
+				}	
+				numQubits = qc_exec(numQubits,nextGate,Qubits);
+				if (i < slen)
+				{
+					if (bytes(s)[i] == DELIM_END)
+					{
+						done = true;
+					}
+					else
+						i++;
+				}
+				else
+					cont = true;
+
+			}
+		}
+		for (i = 0;i < (2**numQubits);i++)
+			stateQubits[i] = Qubits[i][0];
+
+	}
+
+	function readStateQubits() public view returns (uint256)
+	{
+		uint256 i;
+		uint256 j;
+		int256[MAX_IDX] memory tempQubits; 
+
+		i = 0;
+		for (j = 0; j < (2**numStateQubits); j++)
+		{
+			tempQubits[j] = stateQubits[j];
+			if (tempQubits[j] < 0)
+				tempQubits[j] = 0 - tempQubits[j];
+			i += uint(tempQubits[j]);
+		}
+		if (i == 0)
+			revert("unexpected 0 for i.");
+		j = getRandom(i)+1;
+		i = 0;
+		while (j > uint(tempQubits[i]))
+		{
+			j -= uint(tempQubits[i++]);
+		}	
+		return i;
+
+	}
 }
+
