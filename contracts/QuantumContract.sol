@@ -13,6 +13,7 @@ contract QuantumContract
 	bytes1 constant GATE_C      = 'C';
 	bytes1 constant GATE_N      = 'N';
 	bytes1 constant GATE_X      = 'X';
+	bytes1 constant GATE_m      = 'm';
 	bytes1 constant DELIM_NEXT  = ',';
 	bytes1 constant DELIM_END   = '.';
 
@@ -43,6 +44,26 @@ contract QuantumContract
 
 	}
 
+	function qc_0(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+
+		if ((mask & currState) == 0)
+		{
+			Qubits[currState][nQidx] += Qubits[currState][Qidx];
+		}
+	}
+
+	function qc_1(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+
+		if ((mask & currState) == mask)
+		{
+			Qubits[currState][nQidx] += Qubits[currState][Qidx];
+		}
+	}
+
 	function qc_X(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
@@ -59,7 +80,7 @@ contract QuantumContract
 		Qubits[currState][nQidx] = Qubits[currState][Qidx];
 	}
 
-	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal view 
+	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 		if (((cMask & currState) == cMask) && (cMask != 0))
@@ -108,6 +129,34 @@ contract QuantumContract
 				{
 					if (Qubits[j][Qidx]!=0)
 						qc_X(mask,j,Qubits,Qidx);
+				}
+			}
+			else if (qAlgo[i] == GATE_m)
+			{
+				uint256 k = 0;
+				for (j = 0; j < maxj; j++)
+					k += uint(Qubits[j][Qidx]);
+				j = getRandom(k)+1;
+				k = 0;
+				while (j > uint(Qubits[k][Qidx]))
+				{
+					j -= uint(Qubits[k++][Qidx]);
+				}	
+				if ((k & mask) == 0)
+				{
+					for(j=0;j<maxj;j++)
+					{
+						if (Qubits[j][Qidx]!=0)
+							qc_0(mask,j,Qubits,Qidx);
+					}
+				}
+				else
+				{
+					for(j=0;j<maxj;j++)
+					{
+						if (Qubits[j][Qidx]!=0)
+							qc_1(mask,j,Qubits,Qidx);
+					}
 				}
 			}
 			else if (qAlgo[i] == GATE_N)
