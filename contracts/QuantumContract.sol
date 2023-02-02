@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 
 contract QuantumContract 
 {
-	uint8 constant MAX_QUBITS=7;
+	uint8 constant MAX_QUBITS=4;
 	uint256 constant MAX_IDX=2**MAX_QUBITS;
 	bytes1 constant GATE_H      = 'H';
 	bytes1 constant GATE_I      = 'I';
@@ -37,7 +37,7 @@ contract QuantumContract
 		if ((mask & currState) != 0)
 		{
 			Qubits[currState-mask][nQidx] += Qubits[currState][Qidx];
-			Qubits[currState][nQidx] += 0 - Qubits[currState][Qidx];
+			Qubits[currState][nQidx] += 0-Qubits[currState][Qidx];
 		}				
 		else
 		{
@@ -103,7 +103,7 @@ contract QuantumContract
 		uint256 mask;
 		uint256 i;
 		uint256 j;
-		uint256 maxj=2**numQubits;
+		uint256 maxj=(2**numQubits);
 		uint8 Qidx = 0;
 		uint8 nQidx;
 
@@ -111,6 +111,9 @@ contract QuantumContract
 		mask <<= numQubits - 1;
 		for (i=0;i<numQubits;i++)
 		{
+			nQidx = (Qidx == 0)?1:0;
+			for (j=0;j<maxj;j++)
+				Qubits[j][nQidx] = 0;
 			if (qAlgo[i] == GATE_H)
 			{
 				for(j=0;j<maxj;j++)
@@ -194,12 +197,7 @@ contract QuantumContract
 				revert("Unknown or unsupported gate");
 			}
 			mask >>=1;
-			for (j=0;j<maxj;j++)
-				Qubits[j][Qidx] = 0;
-			if (Qidx == 0)
-				Qidx = 1;
-			else
-				Qidx = 0;
+			Qidx = nQidx;
 		}
 		if (Qidx == 1)
 			for (j=0;j<maxj;j++)
@@ -269,6 +267,7 @@ contract QuantumContract
 		}
 
 		// measure			
+
 		i = 0;
 		for (j = 0; j < (2**numQubits); j++)
 		{
