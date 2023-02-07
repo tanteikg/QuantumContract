@@ -55,7 +55,7 @@ import "hardhat/console.sol";
 
 contract QuantumContract 
 {
-	uint8 constant MAX_QUBITS=4;
+	uint8 constant MAX_QUBITS=8;
 	uint256 constant MAX_IDX=2**MAX_QUBITS;
 	bytes1 constant GATE_H      = 'H';
 	bytes1 constant GATE_I      = 'I';
@@ -74,9 +74,9 @@ contract QuantumContract
 		console.log("Welcome to pQCee QuantumContract");
     	}
 
-	function getRandom(uint256 range) private view returns (uint) 
+	function getRandom(uint256 range, uint256 randomSeed) private view returns (uint) 
 	{
-		uint randomHash = uint(keccak256(abi.encode(block.difficulty, block.timestamp)));
+		uint randomHash = uint(keccak256(abi.encode(block.difficulty, block.timestamp, randomSeed)));
 		return randomHash % range;
 	}
 
@@ -147,7 +147,7 @@ contract QuantumContract
 
 	}
 
-	function qc_exec(uint8 numQubits, bytes1[] memory qAlgo, int256[2][MAX_IDX] memory Qubits) internal view returns (uint8)
+	function qc_exec(uint8 numQubits, bytes1[] memory qAlgo, int256[2][MAX_IDX] memory Qubits, uint256 randomSeed) internal view returns (uint8)
 	{
 		uint256 mask;
 		uint256 i;
@@ -198,7 +198,7 @@ contract QuantumContract
 						Qubits[j][nQidx] = 0 - Qubits[j][nQidx];
 					k += uint(Qubits[j][nQidx]);
 				}
-				j = getRandom(k)+1;
+				j = getRandom(k,randomSeed)+1;
 				k = 0;
 				while (j > uint(Qubits[k][nQidx]))
 				{
@@ -255,7 +255,7 @@ contract QuantumContract
 		return numQubits;
 	}
 
-	function runQScript(uint8 numQubits, string memory s) public view returns (uint256) 
+	function runQScript(uint8 numQubits, string memory s, uint256 randomSeed) public view returns (uint256) 
 	{
 		int256[2][MAX_IDX] memory Qubits; 
 		bytes1[] memory nextGate;
@@ -296,7 +296,7 @@ contract QuantumContract
 				{
 					nextGate[j] = bytes(s)[i++];
 				}	
-				numQubits = qc_exec(numQubits,nextGate,Qubits);
+				numQubits = qc_exec(numQubits,nextGate,Qubits,randomSeed);
 				if (i < slen)
 				{
 					if (bytes(s)[i] == DELIM_END)
@@ -324,7 +324,7 @@ contract QuantumContract
 				Qubits[j][0] = 0 - Qubits[j][0];
 			i += uint(Qubits[j][0]);
 		}
-		j = getRandom(i)+1;
+		j = getRandom(i,randomSeed)+1;
 		ret = 0;
 		while (j > uint(Qubits[ret][0]))
 		{
@@ -335,103 +335,5 @@ contract QuantumContract
 			
 	}
 
-	function beginQScript(uint8 numQubits) public
-	{
-		uint256 i;
-		uint256 maxi=2**numQubits;
-
-		if (numQubits > MAX_QUBITS)
-			revert("MAX_QUBITS exceeded");	
-		numStateQubits = numQubits;
-		stateQubits[0] = 1;
-		for (i=1;i<maxi;i++)
-			stateQubits[i] = 0;
-		
-	}
-
-	function contQScript(string memory s) public 
-	{
-		uint8 numQubits = numStateQubits;
-		int256[2][MAX_IDX] memory Qubits; 
-		bytes1[] memory nextGate;
-		bool done = false;
-		bool cont = false;
-		uint256 i = 0;
-		uint256 j;
-		uint256 slen = bytes(s).length; 
-
-		for (i=0;i<(2**numQubits);i++)
-		{
-			Qubits[i][0] = stateQubits[i];
-		}
-	
-		nextGate = new bytes1[](numQubits);
-		console.log("%s called contQScript with string length %d",msg.sender,bytes(s).length);
-		i = 0;
-
-		while ((!done) && (!cont))
-		{
-			if (i + numQubits > slen)
-			{
-				if (bytes(s)[i] == DELIM_END)
-				{
-					done = true;
-				}
-				else
-				{
-					cont = true;
-				}
-			}
-			else
-			{
-				for (j = 0;j < numQubits;j++)
-				{
-					nextGate[j] = bytes(s)[i++];
-				}	
-				numQubits = qc_exec(numQubits,nextGate,Qubits);
-				if (i < slen)
-				{
-					if (bytes(s)[i] == DELIM_END)
-					{
-						done = true;
-					}
-					else
-						i++;
-				}
-				else
-					cont = true;
-
-			}
-		}
-		for (i = 0;i < (2**numQubits);i++)
-			stateQubits[i] = Qubits[i][0];
-
-	}
-
-	function readStateQubits() public view returns (uint256)
-	{
-		uint256 i;
-		uint256 j;
-		int256[MAX_IDX] memory tempQubits; 
-
-		i = 0;
-		for (j = 0; j < (2**numStateQubits); j++)
-		{
-			tempQubits[j] = stateQubits[j];
-			if (tempQubits[j] < 0)
-				tempQubits[j] = 0 - tempQubits[j];
-			i += uint(tempQubits[j]);
-		}
-		if (i == 0)
-			revert("unexpected 0 for i.");
-		j = getRandom(i)+1;
-		i = 0;
-		while (j > uint(tempQubits[i]))
-		{
-			j -= uint(tempQubits[i++]);
-		}	
-		return i;
-
-	}
 }
 
