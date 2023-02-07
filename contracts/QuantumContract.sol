@@ -55,24 +55,71 @@ import "hardhat/console.sol";
 
 contract QuantumContract 
 {
+	address public owner;
+	mapping(address => uint256) public balances;
+	uint256 feePerBlock = 10**2;
+	uint256 evalPeriod = 1;
+	
 	uint8 constant MAX_QUBITS=8;
+	uint8 constant SUBSCRIPTION_QUBITS=5;
 	uint256 constant MAX_IDX=2**MAX_QUBITS;
 	bytes1 constant GATE_H      = 'H';
 	bytes1 constant GATE_I      = 'I';
 	bytes1 constant GATE_C      = 'C';
 	bytes1 constant GATE_N      = 'N';
 	bytes1 constant GATE_X      = 'X';
+	bytes1 constant GATE_Y      = 'Y';
+	bytes1 constant GATE_Z      = 'Z';
+	bytes1 constant GATE_P      = 'P';
+	bytes1 constant GATE_T      = 'T';
 	bytes1 constant GATE_m      = 'm';
 	bytes1 constant DELIM_NEXT  = ',';
 	bytes1 constant DELIM_END   = '.';
 	
-	int256[MAX_IDX] stateQubits; 
-	uint8 numStateQubits;
-
+	struct Qubit
+	{
+		int256[2][MAX_IDX] rQubits;  // instance count in real 
+		int256[2][MAX_IDX] iQubits;  // instance count in imaginary 
+		uint8[2][MAX_IDX] rFloat;  // number of 1/sqrt(2) to multiply 
+	}
 	constructor() 
 	{
 		console.log("Welcome to pQCee QuantumContract");
+		owner = msg.sender;
     	}
+
+	function updateFee(uint256 newFee) public
+	{
+		require(msg.sender == owner, "Owner only");
+
+		feePerBlock = newFee;
+
+	}
+
+	function updateEval(uint256 newEval) public
+	{
+		require(msg.sender == owner, "Owner only");
+	
+		evalPeriod = newEval;
+	}
+
+	function subscribeQScript() public payable 
+	{
+		require(msg.value > 0,"Please transfer a little");
+		uint256 addOn = (msg.value / feePerBlock) + 1; // round up.. 
+		if (balances[msg.sender] < block.number) // new or expired subscriber
+			balances[msg.sender] = block.number;
+		balances[msg.sender] += addOn; 
+			
+	}
+
+	function collectSubscription() external
+	{
+		require(msg.sender == owner, "Owner only");
+
+		payable(owner).transfer(address(this).balance);
+		
+	}
 
 	function getRandom(uint256 range, uint256 randomSeed) private view returns (uint) 
 	{
@@ -80,146 +127,210 @@ contract QuantumContract
 		return randomHash % range;
 	}
 
-	function qc_H(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_H(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 		if ((mask & currState) != 0)
 		{
-			Qubits[currState-mask][nQidx] += Qubits[currState][Qidx];
-			Qubits[currState][nQidx] += 0-Qubits[currState][Qidx];
+			q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+
+			q.rQubits[currState][nQidx] += 0-q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}				
 		else
 		{
-			Qubits[currState+mask][nQidx] += Qubits[currState][Qidx];
-			Qubits[currState][nQidx] += Qubits[currState][Qidx];
+			q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 
 	}
 
-	function qc_0(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_0(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 
 		if ((mask & currState) == 0)
 		{
-			Qubits[currState][nQidx] += Qubits[currState][Qidx];
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 	}
 
-	function qc_1(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_1(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 
 		if ((mask & currState) == mask)
 		{
-			Qubits[currState][nQidx] += Qubits[currState][Qidx];
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 	}
 
-	function qc_X(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_X(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 
 		if ((mask & currState) != 0)
-			Qubits[currState-mask][nQidx] += Qubits[currState][Qidx];
+		{
+			q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+		}
 		else
-			Qubits[currState+mask][nQidx] += Qubits[currState][Qidx];
+		{
+			q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+		}
 	}
 
-	function qc_I(uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_I(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
-		Qubits[currState][nQidx] = Qubits[currState][Qidx];
+		q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+		q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+		q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 	}
 
-	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, int256[2][MAX_IDX] memory Qubits, uint8 Qidx) internal pure 
+	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 		if (((cMask & currState) == cMask) && (cMask != 0))
 		{
 			if ((mask & currState) != 0)
-				Qubits[currState-mask][nQidx] += Qubits[currState][Qidx];
+			{
+				q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
+				q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+			}
 			else
-				Qubits[currState+mask][nQidx] += Qubits[currState][Qidx];
+			{
+				q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+				q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+			}
 		}
 		else
-			Qubits[currState][nQidx] = Qubits[currState][Qidx];
+		{
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
+		}
 
 	}
 
-	function qc_exec(uint8 numQubits, bytes1[] memory qAlgo, int256[2][MAX_IDX] memory Qubits, uint256 randomSeed) internal view returns (uint8)
+	function qc_exec(uint8 numQubits, bytes1[] memory qAlgo, Qubit memory q, uint256 randomSeed) internal view returns (uint8)
 	{
 		uint256 mask;
 		uint256 i;
 		uint256 j;
-		uint256 maxj=(2**numQubits);
 		uint8 Qidx = 0;
-		uint8 nQidx;
 
 		mask = 1;
 		mask <<= numQubits - 1;
 		for (i=0;i<numQubits;i++)
 		{
+			uint256 maxj=(2**numQubits);
+			uint8 nQidx;
+
 			nQidx = (Qidx == 0)?1:0;
 			for (j=0;j<maxj;j++)
-				Qubits[j][nQidx] = 0;
+			{
+				q.rQubits[j][nQidx] = q.iQubits[j][nQidx] = 0;
+				q.rFloat[j][nQidx] = 0;
+			}
 			if (qAlgo[i] == GATE_H)
 			{
 				for(j=0;j<maxj;j++)
 				{
-					if (Qubits[j][Qidx]!=0)
-						qc_H(mask,j,Qubits,Qidx);
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_H(mask,j,q,Qidx);
 				}
 			}
 			else if ((qAlgo[i] == GATE_I) || (qAlgo[i] == GATE_C))
 			{
 				for(j=0;j<maxj;j++)
 				{
-					if (Qubits[j][Qidx]!=0)
-						qc_I(mask,j,Qubits,Qidx);
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_I(mask,j,q,Qidx);
 				}
 			}
 			else if (qAlgo[i] == GATE_X)
 			{
 				for(j=0;j<maxj;j++)
 				{
-					if (Qubits[j][Qidx]!=0)
-						qc_X(mask,j,Qubits,Qidx);
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_X(mask,j,q,Qidx);
 				}
 			}
 			else if (qAlgo[i] == GATE_m)
 			{
 				uint256 k = 0;
-				nQidx = (Qidx == 0)?1:0;
+				//nQidx = (Qidx == 0)?1:0;
 				for (j = 0; j < maxj; j++)
 				{
-					Qubits[j][nQidx] =Qubits[j][Qidx];
-					if (Qubits[j][nQidx] < 0)
-						Qubits[j][nQidx] = 0 - Qubits[j][nQidx];
-					k += uint(Qubits[j][nQidx]);
+					q.rQubits[j][nQidx] = q.rQubits[j][Qidx];
+					if (q.rQubits[j][nQidx] < 0)
+						q.rQubits[j][nQidx] = 0 - q.rQubits[j][nQidx];
+					q.iQubits[j][nQidx] = q.iQubits[j][Qidx];
+					if (q.iQubits[j][nQidx] < 0)
+						q.iQubits[j][nQidx] = 0 - q.iQubits[j][nQidx];
+					q.rFloat[j][nQidx] = q.rFloat[j][Qidx];
+					while (q.rFloat[j][nQidx] > 0)
+					{
+						if (q.rFloat[j][nQidx] >= 2)
+						{
+							q.rQubits[j][nQidx] /= 2;
+							q.iQubits[j][nQidx] /= 2;
+							q.rFloat[j][nQidx] -= 2;
+						}
+						else
+						{
+							q.rQubits[j][nQidx] = (q.rQubits[j][nQidx] * 7)/10;
+							q.iQubits[j][nQidx] = (q.iQubits[j][nQidx] * 7)/10;
+							q.rFloat[j][nQidx] -= 1;
+						}
+					}
+					q.rQubits[j][nQidx] += q.iQubits[j][nQidx];
+
+					k += uint(q.rQubits[j][nQidx]);
 				}
 				j = getRandom(k,randomSeed)+1;
 				k = 0;
-				while (j > uint(Qubits[k][nQidx]))
+				while (j > uint(q.rQubits[k][nQidx]))
 				{
-					j -= uint(Qubits[k++][nQidx]);
+					j -= uint(q.rQubits[k++][nQidx]);
 				}	
 				for (j = 0; j < maxj; j++)
-					Qubits[j][nQidx] = 0;
+				{
+					q.rQubits[j][nQidx] = q.iQubits[j][nQidx] = 0;
+					q.rFloat[j][nQidx] = 0;
+				}
 				if ((k & mask) == 0)
 				{
 					for(j=0;j<maxj;j++)
 					{
-						if (Qubits[j][Qidx]!=0)
-							qc_0(mask,j,Qubits,Qidx);
+						if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+							qc_0(mask,j,q,Qidx);
 					}
 				}
 				else
 				{
 					for(j=0;j<maxj;j++)
 					{
-						if (Qubits[j][Qidx]!=0)
-							qc_1(mask,j,Qubits,Qidx);
+						if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+							qc_1(mask,j,q,Qidx);
 					}
 				}
 			}
@@ -237,8 +348,8 @@ contract QuantumContract
 				}
 				for(j=0;j<maxj;j++)
 				{
-					if (Qubits[j][Qidx]!=0)
-						qc_CN(cMask,mask,j,Qubits,Qidx);
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_CN(cMask,mask,j,q,Qidx);
 				}
 			}
 			else
@@ -249,15 +360,19 @@ contract QuantumContract
 			Qidx = nQidx;
 		}
 		if (Qidx == 1)
-			for (j=0;j<maxj;j++)
-				Qubits[j][0] = Qubits[j][1];
+			for (j=0;j<2**numQubits;j++)
+			{
+				q.rQubits[j][0] = q.rQubits[j][1];
+				q.iQubits[j][0] = q.iQubits[j][1];
+				q.rFloat[j][0] = q.rFloat[j][1];
+			}
 				
 		return numQubits;
 	}
 
 	function runQScript(uint8 numQubits, string memory s, uint256 randomSeed) public view returns (uint256) 
 	{
-		int256[2][MAX_IDX] memory Qubits; 
+		Qubit memory q;
 		bytes1[] memory nextGate;
 		uint256 ret = 0;
 		bool done = false;
@@ -267,14 +382,22 @@ contract QuantumContract
 
 		if (numQubits > MAX_QUBITS)
 			revert("MAX_QUBITS exceeded");	
+		else if (evalPeriod == 0)
+		{
+			if (numQubits > SUBSCRIPTION_QUBITS)
+			{
+				if (balances[msg.sender] < block.number)
+					revert("QUBITS Exceeded, require subscription");	
+			}
+		}
 		for (i=0;i<(2**numQubits);i++)
 		{
-			Qubits[i][0] = Qubits[i][1] = 0;
+			q.rQubits[i][0] = q.rQubits[i][1] = q.iQubits[i][0] = q.iQubits[i][1] = 0;
+			q.rFloat[i][0] = q.rFloat[i][1] = 0;
 		}
-		Qubits[0][0] = 1; // start with all qubits = 0;
+		q.rQubits[0][0] = 1; // start with all qubits = 0;
 	
 		nextGate = new bytes1[](numQubits);
-		console.log("%s called runQScript with string length %d",msg.sender,bytes(s).length);
 		i = 0;
 
 		while (!done)
@@ -296,7 +419,7 @@ contract QuantumContract
 				{
 					nextGate[j] = bytes(s)[i++];
 				}	
-				numQubits = qc_exec(numQubits,nextGate,Qubits,randomSeed);
+				numQubits = qc_exec(numQubits,nextGate,q,randomSeed);
 				if (i < slen)
 				{
 					if (bytes(s)[i] == DELIM_END)
@@ -315,20 +438,39 @@ contract QuantumContract
 			}
 		}
 
-		// measure			
+		// measure in the computational basis
 
 		i = 0;
 		for (j = 0; j < (2**numQubits); j++)
 		{
-			if (Qubits[j][0] < 0)
-				Qubits[j][0] = 0 - Qubits[j][0];
-			i += uint(Qubits[j][0]);
+			if (q.rQubits[j][0] < 0)
+				q.rQubits[j][0] = 0 - q.rQubits[j][0];
+			if (q.iQubits[j][0] < 0)
+				q.iQubits[j][0] = 0 - q.iQubits[j][0];
+			while (q.rFloat[j][0] > 0)
+			{
+				if (q.rFloat[j][0] >= 2)
+				{
+					q.rQubits[j][0] /= 2;
+					q.iQubits[j][0] /= 2;
+					q.rFloat[j][0] -= 2;
+				}
+				else
+				{
+					q.rQubits[j][0] = (q.rQubits[j][0] * 7)/10;
+					q.iQubits[j][0] = (q.iQubits[j][0] * 7)/10;
+					q.rFloat[j][0] -= 1;
+				}
+			}
+			q.rQubits[j][0] += q.iQubits[j][0];		
+
+			i += uint(q.rQubits[j][0]);
 		}
 		j = getRandom(i,randomSeed)+1;
 		ret = 0;
-		while (j > uint(Qubits[ret][0]))
+		while (j > uint(q.rQubits[ret][0]))
 		{
-			j -= uint(Qubits[ret++][0]);
+			j -= uint(q.rQubits[ret++][0]);
 		}	
 
 		return ret;
