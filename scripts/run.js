@@ -13,12 +13,6 @@ const main = async () =>
 	var algo;
 	var desc;
 
-	desc = "8-qubit test"
-	algo = "HHHHHHHH,XXXXXXXX,HHIHHHIH.";
-	numQubits = 8;
-	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
-	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
-
 	desc = "Bell state"
 	algo = "HI,CN.";
 	numQubits = 2;
@@ -49,31 +43,18 @@ const main = async () =>
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
-/*
-	algo1 = "HHI,IIX"
-	algo2 = "IIH,III,CCN,III"
-	algo3 = "IIH,IIX,HHI,XXI"
-	algo4 = "IHI,CNI,IHI,XXI"
-	algo5 = "HHI."
-
-	numQubits = 3;
-
-	var res2 = await qContract.beginQScript(numQubits);
-	await res2.wait();
-	res2 = await qContract.contQScript(algo1);
-	await res2.wait();
-	res2 = await qContract.contQScript(algo2);
-	await res2.wait();
-	res2 = await qContract.contQScript(algo3);
-	await res2.wait();
-	res2 = await qContract.contQScript(algo4);
-	await res2.wait();
-	res2 = await qContract.contQScript(algo5);
-	await res2.wait();
-	res1 = await qContract.readStateQubits();
+	desc = "Shor factoring 21 (Skonana and Tame)"
+	numQubits = 5;
+	algo = "HHHII,IICIN,ICIIN,IIINC,ICICN,IIIIX,CIINC,IIIIX,IIINC,CIICN,IIINC,IIHII,ICPII,CITII,IHIII,CPIII,HIIII."
+	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
-	*/
 
+	desc = "Shor factoring 15 (Vandersypen et. al)"
+	numQubits = 7;
+	algo = "HHHIIII,IICINII,IICIINI,IIICINI,ICINICI,IIICINI,IIIINIC,ICIICIN,HIIIIII,CPIIIII,IHIIIII,CITIIII,ICPIIII,IIHIIII." 
+	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
+	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
+	
 };
 
 const runMain = async () => 

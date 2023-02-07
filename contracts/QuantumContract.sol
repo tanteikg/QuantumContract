@@ -57,7 +57,7 @@ contract QuantumContract
 {
 	address public owner;
 	mapping(address => uint256) public balances;
-	uint256 feePerBlock = 10**2;
+	uint256 feePerBlock = 10**3;
 	uint256 evalPeriod = 1;
 	
 	uint8 constant MAX_QUBITS=8;
@@ -195,6 +195,42 @@ contract QuantumContract
 		}
 	}
 
+	function qc_Y(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+
+		if ((mask & currState) != 0)
+		{
+			q.rQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
+			q.iQubits[currState-mask][nQidx] += 0-q.rQubits[currState][Qidx];
+			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+		}
+		else
+		{
+			q.rQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+			q.iQubits[currState+mask][nQidx] += 0-q.rQubits[currState][Qidx];
+			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+		}
+	}
+
+	function qc_Z(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+
+		if ((mask & currState) != 0)
+		{
+			q.rQubits[currState-mask][nQidx] += 0-q.rQubits[currState][Qidx];
+			q.iQubits[currState-mask][nQidx] += 0-q.iQubits[currState][Qidx];
+			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+		}
+		else
+		{
+			q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+		}
+	}
+
 	function qc_I(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
@@ -213,6 +249,60 @@ contract QuantumContract
 				q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
 				q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
 				q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+			}
+			else
+			{
+				q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+				q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+			}
+		}
+		else
+		{
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
+		}
+
+	}
+
+	function qc_CP(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just P, not CP
+		{
+			if ((mask & currState) != 0)
+			{
+				q.rQubits[currState][nQidx] += 0-q.iQubits[currState][Qidx];
+				q.iQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+				q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
+			}
+			else
+			{
+				q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
+				q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+			}
+		}
+		else
+		{
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
+		}
+
+	}
+
+	function qc_CT(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just P, not CP
+		{
+			if ((mask & currState) != 0)
+			{
+				q.rQubits[currState][nQidx] += ((q.rQubits[currState][Qidx]-q.iQubits[currState][Qidx])*7)/10;
+				q.iQubits[currState][nQidx] += ((q.rQubits[currState][Qidx]+q.iQubits[currState][Qidx])*7)/10;
+				q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx]+1; // to record for adjustments
 			}
 			else
 			{
@@ -272,6 +362,22 @@ contract QuantumContract
 				{
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
 						qc_X(mask,j,q,Qidx);
+				}
+			}
+			else if (qAlgo[i] == GATE_Y)
+			{
+				for(j=0;j<maxj;j++)
+				{
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_Y(mask,j,q,Qidx);
+				}
+			}
+			else if (qAlgo[i] == GATE_Z)
+			{
+				for(j=0;j<maxj;j++)
+				{
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_Z(mask,j,q,Qidx);
 				}
 			}
 			else if (qAlgo[i] == GATE_m)
@@ -350,6 +456,42 @@ contract QuantumContract
 				{
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
 						qc_CN(cMask,mask,j,q,Qidx);
+				}
+			}
+			else if (qAlgo[i] == GATE_P)
+			{
+				uint256 tempVal = 1;
+				tempVal <<= numQubits-1;
+				uint256 cMask = 0;
+
+				for (j=0;j<numQubits;j++)
+				{
+					if (qAlgo[j] == GATE_C)
+						cMask += tempVal;
+					tempVal>>=1;
+				}
+				for(j=0;j<maxj;j++)
+				{
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_CP(cMask,mask,j,q,Qidx);
+				}
+			}
+			else if (qAlgo[i] == GATE_T)
+			{
+				uint256 tempVal = 1;
+				tempVal <<= numQubits-1;
+				uint256 cMask = 0;
+
+				for (j=0;j<numQubits;j++)
+				{
+					if (qAlgo[j] == GATE_C)
+						cMask += tempVal;
+					tempVal>>=1;
+				}
+				for(j=0;j<maxj;j++)
+				{
+					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
+						qc_CT(cMask,mask,j,q,Qidx);
 				}
 			}
 			else
