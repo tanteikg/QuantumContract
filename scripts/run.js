@@ -43,7 +43,7 @@ const main = async () =>
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
-	desc = "Shor factoring 21 (Skonana and Tame)"
+	desc = "Shor factoring 21 (Skosana and Tame)"
 	numQubits = 5;
 	algo = "HHHII,IICIN,ICIIN,IIINC,ICICN,IIIIX,CIINC,IIIIX,IIINC,CIICN,IIINC,IIHII,ICPII,CITII,IHIII,CPIII,HIIII."
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);

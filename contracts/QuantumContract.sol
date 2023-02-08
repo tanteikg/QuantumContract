@@ -393,6 +393,7 @@ contract QuantumContract
 					if (q.iQubits[j][nQidx] < 0)
 						q.iQubits[j][nQidx] = 0 - q.iQubits[j][nQidx];
 					q.rFloat[j][nQidx] = q.rFloat[j][Qidx];
+/*
 					while (q.rFloat[j][nQidx] > 0)
 					{
 						if (q.rFloat[j][nQidx] >= 2)
@@ -408,6 +409,7 @@ contract QuantumContract
 							q.rFloat[j][nQidx] -= 1;
 						}
 					}
+*/
 					q.rQubits[j][nQidx] += q.iQubits[j][nQidx];
 
 					k += uint(q.rQubits[j][nQidx]);
@@ -589,6 +591,7 @@ contract QuantumContract
 				q.rQubits[j][0] = 0 - q.rQubits[j][0];
 			if (q.iQubits[j][0] < 0)
 				q.iQubits[j][0] = 0 - q.iQubits[j][0];
+/*
 			while (q.rFloat[j][0] > 0)
 			{
 				if (q.rFloat[j][0] >= 2)
@@ -604,6 +607,7 @@ contract QuantumContract
 					q.rFloat[j][0] -= 1;
 				}
 			}
+*/
 			q.rQubits[j][0] += q.iQubits[j][0];		
 
 			i += uint(q.rQubits[j][0]);
