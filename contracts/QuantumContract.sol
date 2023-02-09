@@ -57,7 +57,7 @@ contract QuantumContract
 {
 	address public owner;
 	mapping(address => uint256) public balances;
-	uint256 feePerBlock = 10**3;
+	uint256 feePerBlock = 10**8;
 	uint256 evalPeriod = 1;
 	
 	uint8 constant MAX_QUBITS=8;
@@ -82,6 +82,7 @@ contract QuantumContract
 		int256[2][MAX_IDX] iQubits;  // instance count in imaginary 
 		uint8[2][MAX_IDX] rFloat;  // number of 1/sqrt(2) to multiply 
 	}
+
 	constructor() 
 	{
 		console.log("Welcome to pQCee QuantumContract");
@@ -93,7 +94,6 @@ contract QuantumContract
 		require(msg.sender == owner, "Owner only");
 
 		feePerBlock = newFee;
-
 	}
 
 	function updateEval(uint256 newEval) public
@@ -103,14 +103,22 @@ contract QuantumContract
 		evalPeriod = newEval;
 	}
 
-	function subscribeQScript() public payable 
+	function subscribeQScript() public payable
 	{
 		require(msg.value > 0,"Please transfer a little");
 		uint256 addOn = (msg.value / feePerBlock) + 1; // round up.. 
 		if (balances[msg.sender] < block.number) // new or expired subscriber
 			balances[msg.sender] = block.number;
 		balances[msg.sender] += addOn; 
-			
+
+	}
+
+	function checkSubscription() external view returns (uint256)
+	{
+		if (balances[msg.sender] <= block.number)
+			return 0;
+		else
+			return balances[msg.sender] - block.number ;
 	}
 
 	function collectSubscription() external
@@ -118,7 +126,6 @@ contract QuantumContract
 		require(msg.sender == owner, "Owner only");
 
 		payable(owner).transfer(address(this).balance);
-		
 	}
 
 	function getRandom(uint256 range, uint256 randomSeed) private view returns (uint) 

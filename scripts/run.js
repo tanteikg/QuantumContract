@@ -12,6 +12,7 @@ const main = async () =>
 	var numQubits;
 	var algo;
 	var desc;
+	var res;
 
 	desc = "Bell state"
 	algo = "HI,CN.";
@@ -19,6 +20,18 @@ const main = async () =>
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
+	res = await qContract.updateEval(0);
+	await res.wait();
+
+	res = await qContract.subscribeQScript({value:ethers.utils.parseEther("0.001")});
+	await res.wait();
+
+	res1 = await qContract.checkSubscription();
+	console.log("checkSubscription returned ",res1);
+
+	res = await qContract.collectSubscription();
+	await res.wait();
+	
 	desc = "GHZ state"
 	algo = "HII,CNI,ICN.";
 	numQubits = 3;
@@ -54,6 +67,7 @@ const main = async () =>
 	algo = "HHHIIII,IICINII,IICIINI,IIICINI,ICINICI,IIICINI,IIIINIC,ICIICIN,HIIIIII,CPIIIII,IHIIIII,CITIIII,ICPIIII,IIHIIII." 
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
+
 	
 };
 
