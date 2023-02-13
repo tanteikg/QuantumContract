@@ -80,7 +80,6 @@ contract QuantumContract
 	{
 		int256[2][MAX_IDX] rQubits;  // instance count in real 
 		int256[2][MAX_IDX] iQubits;  // instance count in imaginary 
-		uint8[2][MAX_IDX] rFloat;  // number of 1/sqrt(2) to multiply 
 	}
 
 	constructor() 
@@ -141,21 +140,17 @@ contract QuantumContract
 		{
 			q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
 
 			q.rQubits[currState][nQidx] += 0-q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}				
 		else
 		{
 			q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
 
 			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 
 	}
@@ -168,7 +163,6 @@ contract QuantumContract
 		{
 			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 	}
 
@@ -180,7 +174,6 @@ contract QuantumContract
 		{
 			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 	}
 
@@ -192,13 +185,11 @@ contract QuantumContract
 		{
 			q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
 		}
 		else
 		{
 			q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
 		}
 	}
 
@@ -210,13 +201,11 @@ contract QuantumContract
 		{
 			q.rQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
 			q.iQubits[currState-mask][nQidx] += 0-q.rQubits[currState][Qidx];
-			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
 		}
 		else
 		{
-			q.rQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-			q.iQubits[currState+mask][nQidx] += 0-q.rQubits[currState][Qidx];
-			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+			q.rQubits[currState+mask][nQidx] += 0-q.iQubits[currState][Qidx];
+			q.iQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
 		}
 	}
 
@@ -226,15 +215,13 @@ contract QuantumContract
 
 		if ((mask & currState) != 0)
 		{
-			q.rQubits[currState-mask][nQidx] += 0-q.rQubits[currState][Qidx];
-			q.iQubits[currState-mask][nQidx] += 0-q.iQubits[currState][Qidx];
-			q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
+			q.rQubits[currState][nQidx] += 0-q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += 0-q.iQubits[currState][Qidx];
 		}
 		else
 		{
-			q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
-			q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
 		}
 	}
 
@@ -243,7 +230,6 @@ contract QuantumContract
 		uint8 nQidx = (Qidx == 0)?1:0;
 		q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 		q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-		q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 	}
 
 	function qc_CN(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
@@ -255,20 +241,17 @@ contract QuantumContract
 			{
 				q.rQubits[currState-mask][nQidx] += q.rQubits[currState][Qidx];
 				q.iQubits[currState-mask][nQidx] += q.iQubits[currState][Qidx];
-				q.rFloat[currState-mask][nQidx] += q.rFloat[currState][Qidx];
 			}
 			else
 			{
 				q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
 				q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-				q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
 			}
 		}
 		else
 		{
 			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 
 	}
@@ -282,49 +265,46 @@ contract QuantumContract
 			{
 				q.rQubits[currState][nQidx] += 0-q.iQubits[currState][Qidx];
 				q.iQubits[currState][nQidx] += q.rQubits[currState][Qidx];
-				q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 			}
 			else
 			{
-				q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
-				q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-				q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+				q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
 			}
 		}
 		else
 		{
 			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 
 	}
 
-	function qc_CT(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	function qc_CT(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure returns (uint8) 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
-		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just P, not CP
+		uint8 ret = 0;
+		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just T, not CT
 		{
 			if ((mask & currState) != 0)
 			{
-				q.rQubits[currState][nQidx] += ((q.rQubits[currState][Qidx]-q.iQubits[currState][Qidx])*7)/10;
-				q.iQubits[currState][nQidx] += ((q.rQubits[currState][Qidx]+q.iQubits[currState][Qidx])*7)/10;
-				q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx]+1; // to record for adjustments
+				q.rQubits[currState][nQidx] += (q.rQubits[currState][Qidx]-q.iQubits[currState][Qidx]);
+				q.iQubits[currState][nQidx] += (q.rQubits[currState][Qidx]+q.iQubits[currState][Qidx]);
+				ret = 1;
 			}
 			else
 			{
-				q.rQubits[currState+mask][nQidx] += q.rQubits[currState][Qidx];
-				q.iQubits[currState+mask][nQidx] += q.iQubits[currState][Qidx];
-				q.rFloat[currState+mask][nQidx] += q.rFloat[currState][Qidx];
+				q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
 			}
 		}
 		else
 		{
 			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
 			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
-			q.rFloat[currState][nQidx] += q.rFloat[currState][Qidx];
 		}
 
+		return ret;
 	}
 
 	function qc_exec(uint8 numQubits, bytes1[] memory qAlgo, Qubit memory q, uint256 randomSeed) internal view returns (uint8)
@@ -334,18 +314,17 @@ contract QuantumContract
 		uint256 j;
 		uint8 Qidx = 0;
 
+		uint256 maxj=(2**numQubits);
 		mask = 1;
 		mask <<= numQubits - 1;
 		for (i=0;i<numQubits;i++)
 		{
-			uint256 maxj=(2**numQubits);
 			uint8 nQidx;
 
 			nQidx = (Qidx == 0)?1:0;
 			for (j=0;j<maxj;j++)
 			{
 				q.rQubits[j][nQidx] = q.iQubits[j][nQidx] = 0;
-				q.rFloat[j][nQidx] = 0;
 			}
 			if (qAlgo[i] == GATE_H)
 			{
@@ -399,24 +378,6 @@ contract QuantumContract
 					q.iQubits[j][nQidx] = q.iQubits[j][Qidx];
 					if (q.iQubits[j][nQidx] < 0)
 						q.iQubits[j][nQidx] = 0 - q.iQubits[j][nQidx];
-					q.rFloat[j][nQidx] = q.rFloat[j][Qidx];
-/*
-					while (q.rFloat[j][nQidx] > 0)
-					{
-						if (q.rFloat[j][nQidx] >= 2)
-						{
-							q.rQubits[j][nQidx] /= 2;
-							q.iQubits[j][nQidx] /= 2;
-							q.rFloat[j][nQidx] -= 2;
-						}
-						else
-						{
-							q.rQubits[j][nQidx] = (q.rQubits[j][nQidx] * 7)/10;
-							q.iQubits[j][nQidx] = (q.iQubits[j][nQidx] * 7)/10;
-							q.rFloat[j][nQidx] -= 1;
-						}
-					}
-*/
 					q.rQubits[j][nQidx] += q.iQubits[j][nQidx];
 
 					k += uint(q.rQubits[j][nQidx]);
@@ -430,7 +391,6 @@ contract QuantumContract
 				for (j = 0; j < maxj; j++)
 				{
 					q.rQubits[j][nQidx] = q.iQubits[j][nQidx] = 0;
-					q.rFloat[j][nQidx] = 0;
 				}
 				if ((k & mask) == 0)
 				{
@@ -490,7 +450,8 @@ contract QuantumContract
 				uint256 tempVal = 1;
 				tempVal <<= numQubits-1;
 				uint256 cMask = 0;
-
+				uint8[MAX_IDX] memory phaseDone;
+				
 				for (j=0;j<numQubits;j++)
 				{
 					if (qAlgo[j] == GATE_C)
@@ -500,7 +461,15 @@ contract QuantumContract
 				for(j=0;j<maxj;j++)
 				{
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
-						qc_CT(cMask,mask,j,q,Qidx);
+						phaseDone[j] = qc_CT(cMask,mask,j,q,Qidx);
+				}
+				for(j=0;j<maxj;j++)
+				{
+					if (phaseDone[j]==0)
+					{
+						q.rQubits[j][nQidx]+= q.rQubits[j][nQidx];
+						q.iQubits[j][nQidx]+= q.iQubits[j][nQidx];
+					}
 				}
 			}
 			else
@@ -515,7 +484,6 @@ contract QuantumContract
 			{
 				q.rQubits[j][0] = q.rQubits[j][1];
 				q.iQubits[j][0] = q.iQubits[j][1];
-				q.rFloat[j][0] = q.rFloat[j][1];
 			}
 				
 		return numQubits;
@@ -544,7 +512,6 @@ contract QuantumContract
 		for (i=0;i<(2**numQubits);i++)
 		{
 			q.rQubits[i][0] = q.rQubits[i][1] = q.iQubits[i][0] = q.iQubits[i][1] = 0;
-			q.rFloat[i][0] = q.rFloat[i][1] = 0;
 		}
 		q.rQubits[0][0] = 1; // start with all qubits = 0;
 	
@@ -598,24 +565,8 @@ contract QuantumContract
 				q.rQubits[j][0] = 0 - q.rQubits[j][0];
 			if (q.iQubits[j][0] < 0)
 				q.iQubits[j][0] = 0 - q.iQubits[j][0];
-/*
-			while (q.rFloat[j][0] > 0)
-			{
-				if (q.rFloat[j][0] >= 2)
-				{
-					q.rQubits[j][0] /= 2;
-					q.iQubits[j][0] /= 2;
-					q.rFloat[j][0] -= 2;
-				}
-				else
-				{
-					q.rQubits[j][0] = (q.rQubits[j][0] * 7)/10;
-					q.iQubits[j][0] = (q.iQubits[j][0] * 7)/10;
-					q.rFloat[j][0] -= 1;
-				}
-			}
-*/
-			q.rQubits[j][0] += q.iQubits[j][0];		
+
+		//	q.rQubits[j][0] += q.iQubits[j][0];		
 
 			i += uint(q.rQubits[j][0]);
 		}

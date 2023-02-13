@@ -68,6 +68,7 @@ const main = async () =>
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
+
 	
 };
 
