@@ -282,6 +282,7 @@ contract QuantumContract
 
 	function qc_CT(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure returns (uint8) 
 	{
+		 // e^{i*pi/4} = ((1+i)/sqrt(2))
 		uint8 nQidx = (Qidx == 0)?1:0;
 		uint8 ret = 0;
 		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just T, not CT
@@ -458,17 +459,31 @@ contract QuantumContract
 						cMask += tempVal;
 					tempVal>>=1;
 				}
+				tempVal = 0;
 				for(j=0;j<maxj;j++)
 				{
+					phaseDone[j] = 0;
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
-						phaseDone[j] = qc_CT(cMask,mask,j,q,Qidx);
-				}
-				for(j=0;j<maxj;j++)
-				{
-					if (phaseDone[j]==0)
 					{
-						q.rQubits[j][nQidx]+= q.rQubits[j][nQidx];
-						q.iQubits[j][nQidx]+= q.iQubits[j][nQidx];
+						phaseDone[j] = qc_CT(cMask,mask,j,q,Qidx);
+						if (phaseDone[j] > 0)
+							tempVal = 1;
+					}
+				}
+				if (tempVal > 0)
+				{
+					for(j=0;j<maxj;j++)
+					{
+						if (phaseDone[j]==0)
+						{
+							q.rQubits[j][nQidx] *= 10;
+							q.iQubits[j][nQidx] *= 10;
+						}
+						else
+						{
+							q.rQubits[j][nQidx] *= 7;
+							q.iQubits[j][nQidx] *= 7;
+						}
 					}
 				}
 			}
