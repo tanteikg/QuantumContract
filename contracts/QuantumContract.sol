@@ -71,7 +71,9 @@ contract QuantumContract
 	bytes1 constant GATE_Y      = 'Y';
 	bytes1 constant GATE_Z      = 'Z';
 	bytes1 constant GATE_P      = 'P';
+	bytes1 constant GATE_p      = 'p'; // conjugate P gate
 	bytes1 constant GATE_T      = 'T';
+	bytes1 constant GATE_t      = 't'; // conjugate T gate
 	bytes1 constant GATE_m      = 'm';
 	bytes1 constant DELIM_NEXT  = ',';
 	bytes1 constant DELIM_END   = '.';
@@ -280,9 +282,33 @@ contract QuantumContract
 
 	}
 
+	function qc_Cp(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	{
+		uint8 nQidx = (Qidx == 0)?1:0;
+		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just p, not Cp
+		{
+			if ((mask & currState) != 0)
+			{
+				q.rQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+				q.iQubits[currState][nQidx] += 0-q.rQubits[currState][Qidx];
+			}
+			else
+			{
+				q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			}
+		}
+		else
+		{
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+		}
+
+	}
+
 	function qc_CT(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure returns (uint8) 
 	{
-		 // e^{i*pi/4} = ((1+i)/sqrt(2))
+		// e^{i*pi/4} = ((1+i)/sqrt(2))
 		uint8 nQidx = (Qidx == 0)?1:0;
 		uint8 ret = 0;
 		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just T, not CT
@@ -291,6 +317,34 @@ contract QuantumContract
 			{
 				q.rQubits[currState][nQidx] += (q.rQubits[currState][Qidx]-q.iQubits[currState][Qidx]);
 				q.iQubits[currState][nQidx] += (q.rQubits[currState][Qidx]+q.iQubits[currState][Qidx]);
+				ret = 1;
+			}
+			else
+			{
+				q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+				q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+			}
+		}
+		else
+		{
+			q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
+			q.iQubits[currState][nQidx] += q.iQubits[currState][Qidx];
+		}
+
+		return ret;
+	}
+
+	function qc_Ct(uint256 cMask, uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure returns (uint8) 
+	{
+		// e^{-i*pi/4} = ((1-i)/sqrt(2))
+		uint8 nQidx = (Qidx == 0)?1:0;
+		uint8 ret = 0;
+		if ((cMask & currState) == cMask) // allow cMask == 0 ==> just t, not Ct
+		{
+			if ((mask & currState) != 0)
+			{
+				q.rQubits[currState][nQidx] += (q.rQubits[currState][Qidx]+q.iQubits[currState][Qidx]);
+				q.iQubits[currState][nQidx] += (0-q.rQubits[currState][Qidx]+q.iQubits[currState][Qidx]);
 				ret = 1;
 			}
 			else
@@ -428,7 +482,7 @@ contract QuantumContract
 						qc_CN(cMask,mask,j,q,Qidx);
 				}
 			}
-			else if (qAlgo[i] == GATE_P)
+			else if ((qAlgo[i] == GATE_P) || (qAlgo[i] == GATE_p))
 			{
 				uint256 tempVal = 1;
 				tempVal <<= numQubits-1;
@@ -443,10 +497,15 @@ contract QuantumContract
 				for(j=0;j<maxj;j++)
 				{
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
-						qc_CP(cMask,mask,j,q,Qidx);
+					{
+						if (qAlgo[i] == GATE_P)
+							qc_CP(cMask,mask,j,q,Qidx);
+						else
+							qc_Cp(cMask,mask,j,q,Qidx);
+					}
 				}
 			}
-			else if (qAlgo[i] == GATE_T)
+			else if ((qAlgo[i] == GATE_T) || (qAlgo[i] == GATE_t))
 			{
 				uint256 tempVal = 1;
 				tempVal <<= numQubits-1;
@@ -465,7 +524,10 @@ contract QuantumContract
 					phaseDone[j] = 0;
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
 					{
-						phaseDone[j] = qc_CT(cMask,mask,j,q,Qidx);
+						if (qAlgo[i] == GATE_T)
+							phaseDone[j] = qc_CT(cMask,mask,j,q,Qidx);
+						else
+							phaseDone[j] = qc_Ct(cMask,mask,j,q,Qidx);
 						if (phaseDone[j] > 0)
 							tempVal = 1;
 					}
@@ -476,13 +538,13 @@ contract QuantumContract
 					{
 						if (phaseDone[j]==0)
 						{
-							q.rQubits[j][nQidx] *= 10;
-							q.iQubits[j][nQidx] *= 10;
+							q.rQubits[j][nQidx]*= 10;
+							q.iQubits[j][nQidx]*= 10;
 						}
 						else
 						{
-							q.rQubits[j][nQidx] *= 7;
-							q.iQubits[j][nQidx] *= 7;
+							q.rQubits[j][nQidx]*= 7;
+							q.iQubits[j][nQidx]*= 7;
 						}
 					}
 				}
