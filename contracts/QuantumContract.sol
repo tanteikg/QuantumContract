@@ -227,7 +227,7 @@ contract QuantumContract
 		}
 	}
 
-	function qc_I(uint256 mask, uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
+	function qc_I(uint256 currState, Qubit memory q, uint8 Qidx) internal pure 
 	{
 		uint8 nQidx = (Qidx == 0)?1:0;
 		q.rQubits[currState][nQidx] += q.rQubits[currState][Qidx];
@@ -394,7 +394,7 @@ contract QuantumContract
 				for(j=0;j<maxj;j++)
 				{
 					if ((q.rQubits[j][Qidx]!=0) || (q.iQubits[j][Qidx] != 0))
-						qc_I(mask,j,q,Qidx);
+						qc_I(j,q,Qidx);
 				}
 			}
 			else if (qAlgo[i] == GATE_X)
@@ -566,6 +566,121 @@ contract QuantumContract
 		return numQubits;
 	}
 
+	function checkLicense(uint8 numQubits) internal view returns (uint8)
+	{
+		if (numQubits > MAX_QUBITS)
+			return 1;
+		else if (evalPeriod == 0)
+		{
+			if (numQubits > SUBSCRIPTION_QUBITS)
+			{
+				if (balances[msg.sender] < block.number)
+					return 2;
+			}
+		}
+		return 0;
+	}
+
+	function nftQScript(uint8 numQubits, string memory s, uint256 randomSeed) public view returns (bytes memory) 
+	{
+		Qubit memory q;
+		bytes1[] memory nextGate;
+		uint256 total = 0;
+		bool done = false;
+		uint256 i = 0;
+		uint256 j;
+		uint256 idx;
+		uint256 slen = bytes(s).length; 
+		bytes memory colourBlock;
+	
+		if (checkLicense(numQubits) > 0)
+		{
+			revert("Check Subscription");
+		}
+		for (i=0;i<(2**numQubits);i++)
+		{
+			q.rQubits[i][0] = q.rQubits[i][1] = q.iQubits[i][0] = q.iQubits[i][1] = 0;
+		}
+		q.rQubits[0][0] = 1; // start with all qubits = 0;
+	
+		nextGate = new bytes1[](numQubits);
+		i = 0;
+
+		while (!done)
+		{
+			if (i + numQubits > slen)
+			{
+				if (bytes(s)[i] == DELIM_END)
+				{
+					done = true;
+				}
+				else
+				{
+					revert("unexpected end-of-algo without .");
+				}
+			}
+			else
+			{
+				for (j = 0;j < numQubits;j++)
+				{
+					nextGate[j] = bytes(s)[i++];
+				}	
+				numQubits = qc_exec(numQubits,nextGate,q,randomSeed);
+				if (i < slen)
+				{
+					if (bytes(s)[i] == DELIM_END)
+					{
+						done = true;
+					}
+					else
+						i++;
+				}
+				else
+				{
+					revert("unexpected end-of-algo without .");
+				}
+				
+
+			}
+		}
+
+		// measure in the computational basis
+
+		total = 0;
+		colourBlock = new bytes(256);
+		for (j = 0; j < 256; j++)
+			colourBlock[j] = 0;
+		for (j = 0; j < (2**numQubits); j++)
+		{
+			if (q.rQubits[j][0] < 0)
+				q.rQubits[j][0] = 0 - q.rQubits[j][0];
+			if (q.iQubits[j][0] < 0)
+				q.iQubits[j][0] = 0 - q.iQubits[j][0];
+
+			total += uint(q.rQubits[j][0] + q.iQubits[j][0]);
+		}
+
+		idx = 0;
+		for (j = 0; (j < (2**numQubits)) && (idx<256); j++)
+		{
+			i = uint(q.rQubits[j][0] + q.iQubits[j][0]);
+			if (i > 0)
+			{
+				i = i * uint(256/total);
+				while (i > 0)
+				{
+					colourBlock[idx] = bytes1(uint8(j));
+					idx++;
+					i--;
+				}
+			}
+				
+		}	
+
+		return colourBlock;
+			
+	}
+
 	function runQScript(uint8 numQubits, string memory s, uint256 randomSeed) public view returns (uint256) 
 	{
 		Qubit memory q;
@@ -576,15 +691,9 @@ contract QuantumContract
 		uint256 j;
 		uint256 slen = bytes(s).length; 
 
-		if (numQubits > MAX_QUBITS)
-			revert("MAX_QUBITS exceeded");	
-		else if (evalPeriod == 0)
+		if (checkLicense(numQubits) > 0)
 		{
-			if (numQubits > SUBSCRIPTION_QUBITS)
-			{
-				if (balances[msg.sender] < block.number)
-					revert("QUBITS Exceeded, require subscription");	
-			}
+			revert("Check Subscription");
 		}
 		for (i=0;i<(2**numQubits);i++)
 		{
@@ -642,8 +751,6 @@ contract QuantumContract
 				q.rQubits[j][0] = 0 - q.rQubits[j][0];
 			if (q.iQubits[j][0] < 0)
 				q.iQubits[j][0] = 0 - q.iQubits[j][0];
-
-		//	q.rQubits[j][0] += q.iQubits[j][0];		
 
 			i += uint(q.rQubits[j][0]);
 		}
