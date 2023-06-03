@@ -568,16 +568,19 @@ contract QuantumContract
 
 	function checkLicense(uint8 numQubits) internal view returns (uint8)
 	{
+		uint8 rc = 0;
 		if (numQubits > MAX_QUBITS)
-			return 1;
+			rc = 1;
 		else if (evalPeriod == 0)
 		{
 			if (numQubits > SUBSCRIPTION_QUBITS)
 			{
 				if (balances[msg.sender] < block.number)
-					return 2;
+					rc = 2;
 			}
 		}
+		if (rc > 0)
+			revert("Check subscription");
 		return 0;
 	}
 
@@ -593,10 +596,7 @@ contract QuantumContract
 		uint256 slen = bytes(s).length; 
 		bytes memory colourBlock;
 	
-		if (checkLicense(numQubits) > 0)
-		{
-			revert("Check Subscription");
-		}
+		checkLicense(numQubits);
 		for (i=0;i<(2**numQubits);i++)
 		{
 			q.rQubits[i][0] = q.rQubits[i][1] = q.iQubits[i][0] = q.iQubits[i][1] = 0;
@@ -616,7 +616,8 @@ contract QuantumContract
 				}
 				else
 				{
-					revert("unexpected end-of-algo without .");
+					done = true;
+					//revert("unexpected end-of-algo without .");
 				}
 			}
 			else
@@ -637,7 +638,8 @@ contract QuantumContract
 				}
 				else
 				{
-					revert("unexpected end-of-algo without .");
+					done = true;
+					//revert("unexpected end-of-algo without .");
 				}
 				
 
@@ -691,10 +693,7 @@ contract QuantumContract
 		uint256 j;
 		uint256 slen = bytes(s).length; 
 
-		if (checkLicense(numQubits) > 0)
-		{
-			revert("Check Subscription");
-		}
+		checkLicense(numQubits);
 		for (i=0;i<(2**numQubits);i++)
 		{
 			q.rQubits[i][0] = q.rQubits[i][1] = q.iQubits[i][0] = q.iQubits[i][1] = 0;
@@ -714,7 +713,8 @@ contract QuantumContract
 				}
 				else
 				{
-					revert("unexpected end-of-algo without .");
+					done = true;
+					//revert("unexpected end-of-algo without .");
 				}
 			}
 			else
@@ -735,7 +735,8 @@ contract QuantumContract
 				}
 				else
 				{
-					revert("unexpected end-of-algo without .");
+					done = true;
+					//revert("unexpected end-of-algo without .");
 				}
 				
 
