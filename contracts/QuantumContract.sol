@@ -584,7 +584,7 @@ contract QuantumContract
 		return 0;
 	}
 
-	function nftQScript(uint8 numQubits, string memory s, uint256 randomSeed) public view returns (bytes memory) 
+	function nftQScript(uint8 numQubits, string memory s, uint256 randomSeed) public view returns (uint[] memory) 
 	{
 		Qubit memory q;
 		bytes1[] memory nextGate;
@@ -594,7 +594,7 @@ contract QuantumContract
 		uint256 j;
 		uint256 idx;
 		uint256 slen = bytes(s).length; 
-		bytes memory colourBlock;
+		uint[] memory colourBlock;
 	
 		checkLicense(numQubits);
 		for (i=0;i<(2**numQubits);i++)
@@ -649,7 +649,7 @@ contract QuantumContract
 		// measure in the computational basis
 
 		total = 0;
-		colourBlock = new bytes(256);
+		colourBlock = new uint[](256);
 		for (j = 0; j < 256; j++)
 			colourBlock[j] = 0;
 		for (j = 0; j < (2**numQubits); j++)
@@ -671,7 +671,7 @@ contract QuantumContract
 				i = i * uint(256/total);
 				while (i > 0)
 				{
-					colourBlock[idx] = bytes1(uint8(j));
+					colourBlock[idx] = j;
 					idx++;
 					i--;
 				}
