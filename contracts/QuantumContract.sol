@@ -656,19 +656,17 @@ contract QuantumContract
 		{
 			if (q.rQubits[j][0] < 0)
 				q.rQubits[j][0] = 0 - q.rQubits[j][0];
-			if (q.iQubits[j][0] < 0)
-				q.iQubits[j][0] = 0 - q.iQubits[j][0];
 
-			total += uint(q.rQubits[j][0] + q.iQubits[j][0]);
+			total += uint(q.rQubits[j][0]);
 		}
 
 		idx = 0;
 		for (j = 0; (j < (2**numQubits)) && (idx<256); j++)
 		{
-			i = uint(q.rQubits[j][0] + q.iQubits[j][0]);
+			i = uint(q.rQubits[j][0]);
 			if (i > 0)
 			{
-				i = i * uint(256/total);
+				i = uint ((i * 256)/total);
 				while (i > 0)
 				{
 					colourBlock[idx] = j;

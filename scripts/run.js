@@ -13,6 +13,7 @@ const main = async () =>
 	var algo;
 	var desc;
 	var res;
+	var res2;
 
 	desc = "Bell state"
 	algo = "HI,CN.";
@@ -38,6 +39,11 @@ const main = async () =>
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
+	numQubits = 3;
+	algo = "HHH.";
+	res2 = await qContract.nftQScript(numQubits,algo,randomSeed);
+	console.log(desc," NFT returned ",res2);
+
 	desc = "Simon's algorithm for s=11"
 	algo = "HHII,CINI,CIIN,ICNI,ICIN,IImm,HHII,mmII."
 	numQubits = 4;
@@ -50,26 +56,35 @@ const main = async () =>
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
+	res2 = await qContract.nftQScript(numQubits,algo,randomSeed);
+	console.log(desc," NFT returned ",res2);
+
 	desc = "Grover 3 qubit"
 	numQubits = 4;
 	algo = "HHHI,IIIX,IIIH,IIII,CCCN,IIII,IIIH,IIIX,HHHI,XXXI,IIHI,CCNI,IIHI,XXXI,HHHI,IIIX,IIIH,IIII,CCCN,IIII,IIIH,IIIX,HHHI,XXXI,IIHI,CCNI,IIHI,XXXI,HHHI."
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
+	res2 = await qContract.nftQScript(numQubits,algo,randomSeed);
+	console.log(desc," NFT returned ",res2);
+
 	desc = "Shor factoring 21 (Skosana and Tame)"
 	numQubits = 5;
-	algo = "HHHII,IICIN,ICIIN,IIINC,ICICN,IIIIX,CIINC,IIIIX,IIINC,CIICN,IIINC,IIHII,ICpII,CItII,IHIII,CpIII,HIIII."
+	algo = "HHHII,IICIN,ICIIN,IIINC,ICICN,IIINC,IIIIX,CIINC,IIIIX,IIINC,CIICN,IIINC,IIHII,ICpII,CItII,IHIII,CpIII,HIIII."
 //	algo = "HHHII,IICIN,ICIIN,IIINC,ICICN,IIIIX,CIINC,IIIIX,IIINC,CIICN,IIINC,IIHII,ICZII,ICPII,CIZII,CIPII,CITII,IHIII,CZIII,CPIII,HIIII."
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
+	res2 = await qContract.nftQScript(numQubits,algo,randomSeed);
+	console.log(desc," NFT returned ",res2);
+/*
 	desc = "Shor factoring 15 (Vandersypen et. al)"
 	numQubits = 7;
 	algo = "HHHIIII,IICINII,IICIINI,IIICINI,ICINICI,IIICINI,IIIINIC,ICIICIN,HIIIIII,CPIIIII,IHIIIII,CITIIII,ICPIIII,IIHIIII." 
 	res1 = await qContract.runQScript(numQubits,algo,randomSeed);
 	console.log(desc," returned ",res1, " binary ",BigInt(res1).toString(2));
 
-
+*/
 	
 };
 
